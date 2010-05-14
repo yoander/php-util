@@ -42,5 +42,5 @@
 	}
 	ConnectorTest::init();
 	ConnectorTest::testConnection();
-	#ConnectorTest::testExecuteQuery();
+	ConnectorTest::testExecuteQuery();
 	ConnectorTest::testGetResultAsObjects();
