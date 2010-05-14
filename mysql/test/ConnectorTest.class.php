@@ -32,11 +32,11 @@
 		}
 
 		public static function testGetResultAsObjects() {
-			$query = 'select name, stars from hotel';
+			$query = 'select login, name from user';
 			self::$connector->query($query);
 			$hotels = self::$connector->getResultAsObjects();
 			foreach ($hotels as $hotel) {
-				echo $hotel->name, ': ', $hotel->stars, "\n";
+				echo $hotel->login, ': ', $hotel->name, "\n";
 			}
 		}
 	}
