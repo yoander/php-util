@@ -15,7 +15,7 @@
  *
  */
 
-class ImageScalerException {;}
+class ImageScalerException extends Exception {}
 
 class ImageScaler {
     
@@ -52,7 +52,9 @@ class ImageScaler {
 
     	private $mime;
 
-    	private $extension;
+    	private $imgName;
+	
+	private $extension;
 
     	// Original img size in bytes
 	private $size;
@@ -79,7 +81,6 @@ class ImageScaler {
 		    'image/gif' => 'imagegif'
 		);
 	}
-
 
 	/**
 	*
@@ -149,9 +150,9 @@ class ImageScaler {
 	* 
 	* Get image properties from the image stream
 	* 
-	* @param <string> $image An image resource;
-	* @param <string> $mime
-	* @return <boolean> true on success
+	* @param string $image An image resource;
+	* @param string $mime
+	* @return boolean true on success
 	* @thow ImageScalerException 
 	*/
 	public function loadFromStream($image, $mime = 'image/png') {
@@ -172,8 +173,8 @@ class ImageScaler {
 	/**
 	* 
 	* Load an image from the File System
-	* @param <string> $imgPath Full path to the image
-	* @return <boolean>
+	* @param string $imgPath Full path to the image
+	* @return boolean
 	*/
 	public function load($imgPath) {
 		if (!is_readable($imgPath)) {
@@ -197,17 +198,18 @@ class ImageScaler {
 		$this->mime = $dims['mime'];
 		
 		if (!isset ($this->size))
-		    	$this->size = imgsize($imgPath);
+		    	$this->size = filesize($imgPath);
 		return true;
 	}
 
     /**
      * Scale an image 
-     * @param <integer> $newWidth
-     * @param <integer> $newHeight
-     * @param <boolean> $scaleDown
-     * @param <boolean> $inflate
-     * @param <integer> $scaleBy
+     * @param integer $newWidth
+     * @param integer $newHeight
+     * @param boolean $scaleDown
+     * @param boolean $inflate
+     * @param integer $scaleBy
+     * @return boolean
      */
     public function scale($newWidth, $newHeight, $scaleBy = self::SCALE_BY_WIDTH, $scaleDown = true, $inflate = true) {
         if (!isset($newWidth)) {
@@ -243,7 +245,7 @@ class ImageScaler {
         $this->newWidth = $newWidth;
         $this->newHeight = $newHeight;
 
-       if ($scale) {
+       if ($scaleDown) {
             if ( $cond1 ) {
                 $this->newWidth = $newWidth;
                 $this->newHeight = floor( $this->height * ($newWidth / $this->width));
@@ -252,22 +254,53 @@ class ImageScaler {
                 $this->newWidth = floor($this->width * ($newHeight / $this->height));
             }
         }
-        $this->newImg = @imagecreatetruecolor($this->newWidth, $this->newHeight)
-		or throw new ImageScalerException('Cannot Initialize new GD image stream');
+        $this->newImg = @imagecreatetruecolor($this->newWidth, $this->newHeight);
+	if (!$this->newImg) {
+		throw new ImageScalerException('Cannot Initialize new GD image stream');
+	}
 
         if ( $this->width <= $this->newWidth && $this->height <= $this->newHeight &&  $inflate == false ) {
             $this->newImg = $this->img;
         } else {
-            $ok = imagecopyresampled($this->newImg, $this->img, 0, 0, 0, 0, 
+            $ok = @imagecopyresampled($this->newImg, $this->img, 0, 0, 0, 0, 
 	    				$this->newWidth, $this->newHeight, $this->width, $this->height);
-	    if ($ok) {
+	    if (!$ok) {
 	    	throw new ImageScalerException('The image could not be scaled');
 	    }
 	    
         }
+	return true;
 
     }
 
+    /**
+    *
+    * Save the scaled image to a file
+    * @param string path Destination dir
+    * @return boolean 
+    */
+    public function save($path) {
+	$dir = dirname($path);
+        if (!file_exists($dir)) {
+            throw new ImageScalerException("$dir does not exists"); 
+	}  
+
+	if (!is_dir($dir)) {
+            throw new ImageScalerException("$dir must be a dir"); 
+	}
+	
+	if (!is_writeable($dir)) {
+            throw new ImageScalerException("$dir must be writeable"); 
+	}
+	
+	$creator = $this->creators[$this->mime];
+        if (!$creator($this->newImg, $path)) {
+            throw new ImageScalerException('Image could not be saved'); 
+	}
+        $this->newSize = filesize($path);
+        return true;
+    }
+    
     public function __destruct() {
         if (isset($this->newImg) && is_resource($this->newImg)) { @imagedestroy($this->newImg); }
         if (isset($this->img) && is_resource($this->img)) { @imagedestroy($this->img); } 
