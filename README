@@ -1,0 +1,28 @@
+PHP-Util Project is intended to create a collection of classes,
+scripts and helpers with few or without dependencies between 
+them so you can add some functionalaties to your project without 
+included a lot of files.
+
+Current Classes
+
+ImageScale
+Scale Images (ex: Make Thumbnails)
+
+Connector
+A MySql Connector: With this class don't worry about connecting
+and closing connection to / from a MySql server, only specify
+a .ini file and set its location in a global constants CONNECTOR_INIT_FILE
+and later do:
+$connector = Connector::getInstance();
+$conector->query('select name, address from user');
+$users = $connector->getResultAsObject();
+foreach ($users as $user) {
+	echo $user->name, ': ', $user->address;
+}
+Ini file example
+[mysql]
+user=mi-usuario
+passwd=mi-passwd
+db=prueba
+host=localhost
+port=3306
