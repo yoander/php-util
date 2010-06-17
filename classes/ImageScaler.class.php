@@ -3,207 +3,210 @@
  *
  * This file is part of the php-util package.
  * (c) 2010 Yoander Valdés Rodríguez <yoander.valdes@gmail.com>
- * 
+ *
  *
  * For the full copyright and license information, please view the LICENSE
- * img that was distributed with this source code.
- * 
+ * file that is distributed with this source code.
+ *
  * @author yoander
  *
- * This class allows you to scale an image given from the Img System or as
- * stream
+ * This class allows you to scale an image given from the File System Path
+ * or as stream
  *
  */
 
 class ImageScalerException extends Exception {}
 
 class ImageScaler {
-    
-    	// Original image
-	private $img;
 
-    	// Scaled image
-	private $newImg;
+    // Original image
+    private $img;
 
-    	// Original width
-	private $width;
+    // Scaled image
+    private $newImg;
 
-    	// Original height
-	private $height;
+    // Original width
+    private $width;
 
-    	// Scaled width
-	private $newWidth;
+    // Original height
+    private $height;
 
-    	// Scaled height 
-	private $newHeight;
+    // Scaled width
+    private $newWidth;
 
-    	// Supported types: png, jpeg, gif 
-	private $types;
+    // Scaled height
+    private $newHeight;
 
-    	/* 
-	*
-	* Loaders for supported types: imagecreatefromjpeg, imagecreatefrompng
-        * imagecreatefromgif
-	*/
-	private $loaders;
+    // Supported types: png, jpeg, gif
+    private $types;
 
-        // creators for supported types: imagejpeg, imagepng, imagegif
-        private $creators;
+    /*
+    *
+    * Loaders for supported types: imagecreatefromjpeg, imagecreatefrompng
+    * imagecreatefromgif
+    */
+    private $loaders;
 
-    	private $mime;
+    // creators for supported types: imagejpeg, imagepng, imagegif
+    private $creators;
 
-    	private $imgName;
-	
-	private $extension;
+    private $mime;
 
-    	// Original img size in bytes
-	private $size;
+    private $imgName;
 
-    	// Scaled img size en bytes
-	private $newSize;
+    private $extension;
 
-    	const SCALE_BY_WIDTH = 0;
+    // Original img size in bytes
+    private $size;
 
-    	const SCALE_BY_HEIGHT = 1;
+    // Scaled img size en bytes
+    private $newSize;
 
-	public function  __construct() {
-		$this->types = array('image/jpeg', 'image/png', 'image/gif');
+    const SCALE_BY_WIDTH = 0;
 
-		$this->loaders = array(
-		    'image/jpeg' => 'imagecreatefromjpeg',
-		    'image/png'  => 'imagecreatefrompng',
-		    'image/gif' => 'imagecreatefromgif'
-		);
+    const SCALE_BY_HEIGHT = 1;
 
-		$this->creators = array(
-		    'image/jpeg' => 'imagejpeg',
-		    'image/png'  => 'imagepng',
-		    'image/gif' => 'imagegif'
-		);
-	}
+    const SCALE_BY_DEFAULT = 2;
 
-	/**
-	*
-	* @return string Image mime type	
-	*/
-	public function getMime() {
-		return $this->mime;
-	}
+    public function  __construct() {
+        $this->types = array('image/jpeg', 'image/png', 'image/gif');
 
-	/*
-	*
-	* @return string Image extension
-	*/
-	public function getExtension() {
-		return $this->extension;
-	}
+        $this->loaders = array(
+            'image/jpeg' => 'imagecreatefromjpeg',
+            'image/png'  => 'imagecreatefrompng',
+            'image/gif' => 'imagecreatefromgif'
+        );
 
-	/*
-	*
-	* @return numeric Original image width
-	*/
-	public function getWidth() {
-		return $this->width;
-	}
-
-	/*
-	*
-	* @return numeric Scaled image width
-	*/
-	public function getNewWidth() {
-		return $this->newWidth;
-	}
-
-	/**
-	*
-	* @return numeric Original image height
-	*/
-	public function getHeight() {
-		return $this->height;
-	}
-
-	/*
-	*
-	* @return numeric Sclaed image height 
-	*/
-	public function getNewHeight() {
-		return $this->newHeight;
-	}
-
-	/**
-	*
-	* @return Original image size in bytes 
-	*/
-	public function getSize() {
-		return $this->size;
-	}
-
-	/**
-	*
-	* @return Scaled image size in bytes 
-	*/
-	public function getNewSize() {
-		return $this->newSize;
-	}
-
-	/**
-	* 
-	* Get image properties from the image stream
-	* 
-	* @param string $image An image resource;
-	* @param string $mime
-	* @return boolean true on success
-	* @thow ImageScalerException 
-	*/
-	public function loadFromStream($image, $mime = 'image/png') {
-		if ( !in_array($mime, $this->types) ) {
-		    	throw new ImageScalerException("Mime type: $mime not supported");
-		}
-
-		if (!($this->img = @imagecreatefromstring($image))) {
-		    	throw new ImageScalerException('Could not load image from stream');
-		}
-
-		$this->width = imagesx($this->img);
-		$this->height = imagesy($this->img);
-		$this->mime = $mime;
-		return true;
-	}
-
-	/**
-	* 
-	* Load an image from the File System
-	* @param string $imgPath Full path to the image
-	* @return boolean
-	*/
-	public function load($imgPath) {
-		if (!is_readable($imgPath)) {
-			throw new ImageScalerException("Image file: $imgPath is missing or is unreadable!");
-		}
-		
-		$this->extension = pathinfo($imgPath, PATHINFO_EXTENSION);
-		
-		if (!$dims = @getimagesize($imgPath)) {
-		    	throw new ImageScalerException("Image file: $imgPath could not be read");
-		}
-		
-		if (!in_array($dims['mime'], $this->types)) {
-		    	throw new ImageScalerException("Mime type: {$dims['mime']}  not supported");
-		}
-
-		$loader = $this->loaders[$dims['mime']];
-		$this->img = $loader($imgPath);
-		$this->width = $dims[0];
-		$this->height = $dims[1];
-		$this->mime = $dims['mime'];
-		
-		if (!isset ($this->size))
-		    	$this->size = filesize($imgPath);
-		return true;
-	}
+        $this->creators = array(
+            'image/jpeg' => 'imagejpeg',
+            'image/png'  => 'imagepng',
+            'image/gif' => 'imagegif'
+        );
+    }
 
     /**
-     * Scale an image 
+    *
+    * @return string Image mime type
+    */
+    public function getMime() {
+        return $this->mime;
+    }
+
+    /*
+    *
+    * @return string Image extension
+    */
+    public function getExtension() {
+        return $this->extension;
+    }
+
+    /*
+    *
+    * @return numeric Original image width
+    */
+    public function getWidth() {
+        return $this->width;
+    }
+
+    /*
+    *
+    * @return numeric Scaled image width
+    */
+    public function getNewWidth() {
+        return $this->newWidth;
+    }
+
+    /**
+    *
+    * @return numeric Original image height
+    */
+    public function getHeight() {
+        return $this->height;
+    }
+
+    /*
+    *
+    * @return numeric Sclaed image height
+    */
+    public function getNewHeight() {
+        return $this->newHeight;
+    }
+
+    /**
+    *
+    * @return Original image size in bytes
+    */
+    public function getSize() {
+        return $this->size;
+    }
+
+    /**
+    *
+    * @return Scaled image size in bytes
+    */
+    public function getNewSize() {
+        return $this->newSize;
+    }
+
+    /**
+    *
+    * Get image properties from the image stream (An image retrieved
+    * from a database)
+    *
+    * @param string $image An image resource;
+    * @param string $mime
+    * @return boolean true on success
+    * @thow ImageScalerException
+    */
+    public function loadFromStream($image, $mime = 'image/png') {
+        if ( !in_array($mime, $this->types) ) {
+                throw new ImageScalerException("Mime type: $mime not supported");
+        }
+
+        if (!($this->img = @imagecreatefromstring($image))) {
+                throw new ImageScalerException('Could not load image from stream');
+        }
+
+        $this->width = imagesx($this->img);
+        $this->height = imagesy($this->img);
+        $this->mime = $mime;
+        return true;
+    }
+
+    /**
+    *
+    * Load an image from the File System
+    * @param string $imgPath Full path to the image
+    * @return boolean
+    */
+    public function load($imgPath) {
+        if (!is_readable($imgPath)) {
+            throw new ImageScalerException("Image file: $imgPath is missing or is unreadable!");
+        }
+
+        $this->extension = pathinfo($imgPath, PATHINFO_EXTENSION);
+
+        if (!$dims = @getimagesize($imgPath)) {
+                throw new ImageScalerException("Image file: $imgPath could not be read");
+        }
+
+        if (!in_array($dims['mime'], $this->types)) {
+                throw new ImageScalerException("Mime type: {$dims['mime']}  not supported");
+        }
+
+        $loader = $this->loaders[$dims['mime']];
+        $this->img = $loader($imgPath);
+        $this->width = $dims[0];
+        $this->height = $dims[1];
+        $this->mime = $dims['mime'];
+
+        if (!isset ($this->size))
+                $this->size = filesize($imgPath);
+        return true;
+    }
+
+    /**
+     * Scale an image
      * @param integer $newWidth
      * @param integer $newHeight
      * @param boolean $scaleDown
@@ -211,22 +214,22 @@ class ImageScaler {
      * @param integer $scaleBy
      * @return boolean
      */
-    public function scale($newWidth, $newHeight, $scaleBy = self::SCALE_BY_WIDTH, $scaleDown = true, $inflate = true) {
+    public function scale($newWidth, $newHeight, $scaleBy = self::SCALE_BY_DEFAULT, $scaleDown = true, $inflate = true) {
         if (!isset($newWidth)) {
-        	throw new ImageScalerException('New width is mandatory');
-	}
-        
-	if (!is_numeric($newWidth)) {
-        	throw new ImageScalerException("Invalid new width: $newWidth");
-	}
+            throw new ImageScalerException('New width is mandatory');
+        }
+
+        if (!is_numeric($newWidth)) {
+                throw new ImageScalerException("Invalid new width: $newWidth");
+        }
 
         if (!isset($newHeight)) {
-        	throw new ImageScalerException('New height is mandatory');
-	}
-        
-	if (!is_numeric($newHeight)) {
-        	throw new ImageScalerException("Invalid new height: $newHeight");
-	}
+                throw new ImageScalerException('New height is mandatory');
+        }
+
+        if (!is_numeric($newHeight)) {
+                throw new ImageScalerException("Invalid new height: $newHeight");
+        }
 
         switch ($scaleBy) {
             case self::SCALE_BY_WIDTH:
@@ -241,7 +244,7 @@ class ImageScaler {
                 $cond1 = ($this->width > $this->height);
                 $cond2 =  ($this->width < $this->height);
         }
-     
+
         $this->newWidth = $newWidth;
         $this->newHeight = $newHeight;
 
@@ -255,55 +258,69 @@ class ImageScaler {
             }
         }
         $this->newImg = @imagecreatetruecolor($this->newWidth, $this->newHeight);
-	if (!$this->newImg) {
-		throw new ImageScalerException('Cannot Initialize new GD image stream');
-	}
+        if (!$this->newImg) {
+            throw new ImageScalerException('Cannot Initialize new GD image stream');
+        }
 
         if ( $this->width <= $this->newWidth && $this->height <= $this->newHeight &&  $inflate == false ) {
             $this->newImg = $this->img;
         } else {
-            $ok = @imagecopyresampled($this->newImg, $this->img, 0, 0, 0, 0, 
-	    				$this->newWidth, $this->newHeight, $this->width, $this->height);
-	    if (!$ok) {
-	    	throw new ImageScalerException('The image could not be scaled');
-	    }
-	    
+            $ok = @imagecopyresampled($this->newImg, $this->img, 0, 0, 0, 0,
+                        $this->newWidth, $this->newHeight, $this->width, $this->height);
+            if (!$ok) {
+                throw new ImageScalerException('The image could not be scaled');
+            }
         }
-	return true;
+        return true;
+    }
 
+    /**
+    *
+    * A bridge to scale function with scale = self::SCALE_BY_WIDTH
+    */
+    public function scaleByWidth($newWidth, $newHeight, $scaleDown = true, $inflate = true) {
+        return $this->scale($newWidth, $newHeight, self::SCALE_BY_WIDTH, $scaleDown, $inflate);
+    }
+
+    /**
+    *
+    * A bridge to scale function with scale = self::SCALE_BY_HEIGHT
+    */
+    public function scaleByHeight($newWidth, $newHeight, $scaleDown = true, $inflate = true) {
+        return $this->scale($newWidth, $newHeight, self::SCALE_BY_HEIGHT, $scaleDown, $inflate);
     }
 
     /**
     *
     * Save the scaled image to a file
     * @param string path Destination dir
-    * @return boolean 
+    * @return boolean
     */
     public function save($path) {
-	$dir = dirname($path);
+        $dir = dirname($path);
         if (!file_exists($dir)) {
-            throw new ImageScalerException("$dir does not exists"); 
-	}  
+            throw new ImageScalerException("$dir does not exists");
+        }
 
-	if (!is_dir($dir)) {
-            throw new ImageScalerException("$dir must be a dir"); 
-	}
-	
-	if (!is_writeable($dir)) {
-            throw new ImageScalerException("$dir must be writeable"); 
-	}
-	
-	$creator = $this->creators[$this->mime];
+        if (!is_dir($dir)) {
+                throw new ImageScalerException("$dir must be a dir");
+        }
+
+        if (!is_writeable($dir)) {
+                throw new ImageScalerException("$dir must be writeable");
+        }
+
+        $creator = $this->creators[$this->mime];
         if (!$creator($this->newImg, $path)) {
-            throw new ImageScalerException('Image could not be saved'); 
-	}
+            throw new ImageScalerException('Image could not be saved');
+        }
         $this->newSize = filesize($path);
         return true;
     }
-    
+
     public function __destruct() {
         if (isset($this->newImg) && is_resource($this->newImg)) { @imagedestroy($this->newImg); }
-        if (isset($this->img) && is_resource($this->img)) { @imagedestroy($this->img); } 
+        if (isset($this->img) && is_resource($this->img)) { @imagedestroy($this->img); }
     }
 
 }
