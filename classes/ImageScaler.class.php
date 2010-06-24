@@ -82,6 +82,12 @@ class ImageScaler {
             'image/png'  => 'imagepng',
             'image/gif' => 'imagegif'
         );
+
+        $this->quality = array(
+            'image/jpeg' => '89',
+            'image/png'  => '89',
+            'image/gif' => null
+        );
     }
 
     /**
@@ -233,8 +239,8 @@ class ImageScaler {
 
         switch ($scaleBy) {
             case self::SCALE_BY_WIDTH:
-                $cond1 = ($newWidth < $this->width);
-                $cond2 = ($newHeight < $this->height);
+                $cond1 = ($newWidth <= $this->width);
+                $cond2 = ($newHeight <= $this->height);
                 break;
             case self::SCALE_BY_HEIGHT:
                 $cond1 = false;
@@ -245,8 +251,9 @@ class ImageScaler {
                 $cond2 =  ($this->width < $this->height);
         }
 
-        $this->newWidth = $newWidth;
-        $this->newHeight = $newHeight;
+        // Init new image dimensions
+        $this->newWidth = $this->width;
+        $this->newHeight = $this->height;
 
        if ($scaleDown) {
             if ( $cond1 ) {
@@ -311,8 +318,15 @@ class ImageScaler {
         }
 
         $creator = $this->creators[$this->mime];
-        if (!$creator($this->newImg, $path)) {
-            throw new ImageScalerException('Image could not be saved');
+        $quality = $this->quality[$this->mime];
+        if (isset($quality)) {
+            if (!$creator($this->newImg, $path, $quality)) {
+                throw new ImageScalerException('Image could not be saved');
+            }
+        } else {
+            if (!$creator($this->newImg, $path)) {
+                throw new ImageScalerException('Image could not be saved');
+            }
         }
         $this->newSize = filesize($path);
         return true;
